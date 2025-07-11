@@ -1,0 +1,5 @@
+Updates to portfolio
+
+- added projects
+- updated projects with readme.md files
+

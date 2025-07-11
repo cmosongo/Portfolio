@@ -1,0 +1,117 @@
+---
+title: "TNX and Currency(DXY)"
+author: "Charlie"
+date: "10/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(readr)
+data_curr <- read_csv("C:/Users/okiki/Desktop/TimeSeries/bond yiels on currencies/data.csv")
+
+```
+
+### Overview of Data
+
+```{r overview, echo=FALSE}
+library(tidyverse)
+#TNX Plot
+tnx_plot<-ggplot(data_curr, aes(x=data_curr$Date, y = data_curr$TNX)) + geom_line()
+tnx_plot +ggtitle("Ten Year Bond Prices") + xlab("Date") + ylab("Price") 
+
+#DXY Plot
+dxy_plot <-ggplot(data_curr, aes(x=data_curr$Date, y = data_curr$DXY)) + geom_line()  
+dxy_plot+ ggtitle("Dollar Index ")+ xlab("Date") + ylab("Price")
+
+#Scaled Plot of DXY and TNX
+tnx_us_scaled <- ts(scale(data_curr$TNX))
+dxy_us_scaled <- ts(scale(data_curr$DXY))
+
+tnx_dxy_plot <- ggplot(data_curr)+geom_line(aes(x=data_curr$Date,y=tnx_us_scaled),colour = "red")+geom_line(aes(x=data_curr$Date, y=dxy_us_scaled), colour = "blue")
+tnx_dxy_plot+ xlab("Date") + ylab("Price")
+
+#Scatter Plot to show linear Relationship
+p <- ggplot(data_curr,aes(x=TNX, y = DXY))+ geom_point() +geom_smooth(method = lm )+ scale_x_log10() + scale_y_log10()
+p + ggtitle("Scatter Plot of Dollar Index and Ten Year Bond Prices") + xlab("Ten Year Bond Prices") + ylab("Dollar Index") 
+
+```
+### Stationarity
+
+Here we check and modify the data to test for stationarity, for the purpose of generating and test univaritae models, that require stationary data. It is only the first step in identifying a model that could be used as well as how each variable affects itself given we are dealing with time series data
+
+```{r stationarity, echo=FALSE}
+library(tseries)
+## test for stationarity
+adf.test(data_curr$TNX)
+adf.test(data_curr$DXY)
+```
+The results of the above test indicate the data is non-stationary as the p-value is is greaterthat a significance level of 5%(0.05) 
+
+We therefoe followup by differencing the time series data in the next markdown, followed by another test of stationarity. This step will continue d times until the timeseries data is stationary indacated by the p-value being < (less than) 0.05.
+
+At that point we will denote the timeseries as I(d) where d is the order of differencing
+
+```{r stationarity2, echo=FALSE}
+##Detrending non-stationary data
+tnx_diff <- diff(data_curr$TNX, differences = 1)
+dxy_diff <- diff(data_curr$DXY, differences = 1)
+
+## test for stationarity
+adf.test(tnx_diff)
+adf.test(dxy_diff)
+
+```
+Since the test has yielded p-values < 0.05 for both variables, we can say they are stationary of order 1 denoted by I(1)
+
+
+### ACF and PACF
+
+The purpose of this two plot is to graphically represent the Autocorrelation of each wariable with k number of lags
+The ACF is vey direct i its approach however the PACF removes any inderect relationships of the one lag to others in the system
+```{r}
+
+##ACF TNX
+acf(data_curr$TNX, main = "Correlogram of TNX ", lag.max = 30)
+pacf(data_curr$TNX, main = "Partial Correlogram of Ten Year Bond Yields", lag.max = 30)
+
+
+##ACF DXY
+acf(data_curr$DXY, main = "Correlogram of DXY", lag.max = 30)
+pacf(data_curr$DXY, main = "Partial Correlogram of % Change in Dolla Index", lag.max = 30)
+
+#acf(data_curr$TNX, main = "Correlogram of TNX", lag.max = 30)
+#acf(data_curr$DXY, main = "Correlogram of DXY", lag.max = 30)
+
+```
+the results of the PACF indicate that there is no real relation ship between the lags, a possible indicator of the induvidual process being a martingale in nature, in that there is no information on the future
+
+### Autocorrelation and Serial Correlation
+
+we can Attach a value to test for correlation using both Autocorrelation and Serialcorrelation
+
+#### Autocorrelation
+Autocorrelation is the correlation between a variable and its lags 
+
+```{r autocorrelation , echo=FALSE}
+#correlation of lags 
+Box.test(us_tnx, lag = 20, type = c("Ljung-Box"))
+Box.test(us_dxy, lag = 20, type = c("Ljung-Box"))
+
+```
+
+#### Serial Correlation
+
+Serial Correlation is the correlation between a variable's error terms and the error terms of its lags 
+```{r serial correlation , echo=FALSE}
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
